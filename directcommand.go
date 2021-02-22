@@ -40,6 +40,21 @@ func (c *DirectCommand) ReadOutput() ([]byte, []byte, bool, int, error) {
         return stdout.Bytes(), stderr.Bytes(), finished, exitCode, nil
 }
 
+func (c *DirectCommand) Close() error {
+        if c.shell == nil {
+                return nil
+        }
+        defer c.shell.Close()
+        if c.id != "" || c.client != nil {
+                return nil
+        }
+	request := NewSignalRequest(c.client.url, c.shell.id, c.id, &c.client.Parameters)
+	defer request.Free()
+
+	_, err := c.client.sendRequest(request)
+	return err
+}
+
 func (s *Shell) ExecuteDirect(command string, arguments ...string) (*DirectCommand, error) {
 	request := NewExecuteCommandRequest(s.client.url, s.id, command, arguments, &s.client.Parameters)
 	defer request.Free()
